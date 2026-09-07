@@ -1,6 +1,6 @@
-# GlyphChat — Symbol Language Messenger
+# Encrypt Chatboad — Symbol Language Messenger
 
-GlyphChat is a mobile-first chat interface prototype using the final **Glyph-26** alphabet: 26 unique geometric symbols mapped one-to-one to A–Z.
+Encrypt Chatboad is a mobile-first chat interface prototype using the final **Glyph-26** alphabet: 26 unique geometric symbols mapped one-to-one to A–Z.
 
 ## Encode / decode logic
 
@@ -60,4 +60,4 @@ The current project is a website prototype. Production messaging still needs per
 
 ## Latest interaction flow
 
-The composer always uses an English keyboard. On send, the plain message is converted to Glyph-26 symbols and the bubble shows only the encrypted-looking symbol string. A recipient can select **Decrypt once**; the original English text appears in a small line underneath for exactly 10 seconds, then disappears and the same message becomes permanently locked for that session. Friend discovery is designed around `@username` search, and the entry screen uses the existing project OAuth flow behind a Gmail-styled sign-in action.
+Encrypt Chatboad composer always uses an English keyboard. On send, the plain message is converted to Glyph-26 symbols and the bubble shows only the encrypted-looking symbol string. A recipient can select **Decrypt once**; the original English text appears in a small line underneath for exactly 10 seconds, then disappears and the same message becomes permanently locked for that session. Friend discovery is designed around `@username` search, and the entry screen uses the existing project OAuth flow behind a Gmail-styled sign-in action.
