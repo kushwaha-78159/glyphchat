@@ -57,3 +57,7 @@ pnpm dev
 ```
 
 The current project is a website prototype. Production messaging still needs persistent message tables, real-time delivery (WebSockets or a managed realtime layer), user invitations, push notifications, moderation/reporting, and a thoroughly reviewed end-to-end encryption protocol. For Google Play, the responsive product should be packaged as a native Android/Expo client and then tested and published through Google Play Console; this website alone is not a Play Store submission.
+
+## Latest interaction flow
+
+The composer always uses an English keyboard. On send, the plain message is converted to Glyph-26 symbols and the bubble shows only the encrypted-looking symbol string. A recipient can select **Decrypt once**; the original English text appears in a small line underneath for exactly 10 seconds, then disappears and the same message becomes permanently locked for that session. Friend discovery is designed around `@username` search, and the entry screen uses the existing project OAuth flow behind a Gmail-styled sign-in action.

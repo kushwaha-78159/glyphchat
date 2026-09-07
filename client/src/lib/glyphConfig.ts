@@ -1,0 +1,1 @@
+export const DECRYPT_DISPLAY_MS = 10000;

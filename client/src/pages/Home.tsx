@@ -1,4 +1,7 @@
 import { useMemo, useState } from "react";
+import { useAuth } from "@/_core/hooks/useAuth";
+import { startLogin } from "@/const";
+import { DECRYPT_DISPLAY_MS } from "@/lib/glyphConfig";
 import {
   Bell, Check, Copy, Hash, Info, LockKeyhole, Menu, Paperclip,
   Phone, Plus, Search, Send, Settings2, Smile, Sparkles, Timer, Unlock, Video, X,
@@ -14,7 +17,6 @@ const alphabet = [
 
 const letterToSymbol: Record<string, string> = Object.fromEntries(alphabet);
 const symbolToLetter: Record<string, string> = Object.fromEntries(alphabet.map(([letter, symbol]) => [symbol, letter]));
-export const DECRYPT_DISPLAY_MS = 120000;
 
 export function encodeText(value: string) {
   return value.toUpperCase().split("").map((character) => letterToSymbol[character] ?? character).join("");
@@ -32,10 +34,10 @@ const initialMessages: Message[] = [
 ];
 
 const friends = [
-  { name: "Maya Chen", initials: "MC", color: "coral", status: "online", preview: "△■■✧◈ · ✚★✧✧…", time: "10:43", active: true },
-  { name: "Arjun Kapoor", initials: "AK", color: "blue", status: "typing…", preview: "◆⬢■ · ◈✧✧ · ◆", time: "09:18" },
-  { name: "Sofia Alvarez", initials: "SA", color: "violet", status: "last seen 2h ago", preview: "★☆ · ⬢✧✧⬥", time: "Yesterday" },
-  { name: "Leo Martin", initials: "LM", color: "green", status: "last seen yesterday", preview: "⬦■ · ⬣⬢⬢", time: "Yesterday" },
+  { name: "Maya Chen", handle: "@maya.glyph", initials: "MC", color: "coral", status: "online", preview: "△■■✧◈ · ✚★✧✧…", time: "10:43", active: true },
+  { name: "Arjun Kapoor", handle: "@arjun.k", initials: "AK", color: "blue", status: "typing…", preview: "◆⬢■ · ◈✧✧ · ◆", time: "09:18" },
+  { name: "Sofia Alvarez", handle: "@sofia.a", initials: "SA", color: "violet", status: "last seen 2h ago", preview: "★☆ · ⬢✧✧⬥", time: "Yesterday" },
+  { name: "Leo Martin", handle: "@leo.m", initials: "LM", color: "green", status: "last seen yesterday", preview: "⬦■ · ⬣⬢⬢", time: "Yesterday" },
 ];
 
 function Avatar({ initials, color, size = "md" }: { initials: string; color: string; size?: "sm" | "md" }) {
@@ -43,7 +45,12 @@ function Avatar({ initials, color, size = "md" }: { initials: string; color: str
 }
 function AppLogo() { return <div className="app-logo"><span>◆</span><span>✦</span><span>⬡</span></div>; }
 
+function LoginScreen() {
+  return <div className="login-shell"><div className="login-orbit orbit-one" /><div className="login-orbit orbit-two" /><div className="login-card"><div className="login-brand"><AppLogo /><span>glyph<span>chat</span></span></div><div className="login-mark"><Sparkles size={19} /></div><p className="eyebrow">Private social protocol</p><h1>Messages that only<br /><em>your circle</em> can read.</h1><p className="login-copy">A WhatsApp-style messenger with a shared Glyph-26 language, one-time decrypts, and your identity connected through Gmail.</p><button className="google-login" onClick={() => startLogin()}><span className="google-g">G</span><span>Continue with Gmail</span><span className="login-arrow">↗</span></button><div className="login-trust"><span><LockKeyhole size={13} /> encrypted by default</span><span><span className="trust-dot" /> Glyph network live</span></div><div className="login-preview"><div className="mini-label">Your private language</div><div className="mini-glyphs">◆ ◇ ● ○ ■ □ ▲ △ ★ ☆ ✦ ✧</div></div></div><div className="login-footer">GlyphChat · a visual language for close friends</div></div>;
+}
+
 export default function Home() {
+  const { user, loading, isAuthenticated } = useAuth();
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
   const [activePanel, setActivePanel] = useState<"chat" | "alphabet">("chat");
@@ -53,8 +60,9 @@ export default function Home() {
   const [showDecoder, setShowDecoder] = useState(false);
   const [decoderInput, setDecoderInput] = useState("△■✧✧✖ · ⬥◈⬢✧");
   const [decryptedIds, setDecryptedIds] = useState<Record<number, boolean>>({});
+  const [consumedIds, setConsumedIds] = useState<Record<number, boolean>>({});
 
-  const visibleFriends = useMemo(() => friends.filter((friend) => friend.name.toLowerCase().includes(searchQuery.toLowerCase())), [searchQuery]);
+  const visibleFriends = useMemo(() => friends.filter((friend) => `${friend.name} ${friend.handle}`.toLowerCase().includes(searchQuery.toLowerCase())), [searchQuery]);
 
   function sendMessage() {
     if (!draft.trim()) return;
@@ -67,6 +75,8 @@ export default function Home() {
   }
 
   function decryptMessage(messageId: number) {
+    if (consumedIds[messageId]) return;
+    setConsumedIds((current) => ({ ...current, [messageId]: true }));
     setDecryptedIds((current) => ({ ...current, [messageId]: true }));
     window.setTimeout(() => {
       setDecryptedIds((current) => {
@@ -82,22 +92,25 @@ export default function Home() {
     window.setTimeout(() => setCopied(null), 1200);
   }
 
+  if (loading) return <div className="loading-screen"><AppLogo /><span>Connecting to Glyph network…</span></div>;
+  if (!isAuthenticated) return <LoginScreen />;
+
   return <div className="app-shell">
     <header className="topbar">
       <div className="brand-lockup"><AppLogo /><div><div className="brand-name">glyph<span>chat</span></div><div className="brand-tagline">Speak beyond words</div></div></div>
-      <div className="topbar-actions"><button className="icon-button mobile-only" aria-label="Open navigation" onClick={() => setShowMobileNav(true)}><Menu size={20} /></button><div className="security-pill"><LockKeyhole size={14} /> End-to-end encrypted</div><button className="icon-button" aria-label="Notifications"><Bell size={19} /><span className="notification-dot" /></button><Avatar initials="RK" color="ink" size="sm" /></div>
+      <div className="topbar-actions"><button className="icon-button mobile-only" aria-label="Open navigation" onClick={() => setShowMobileNav(true)}><Menu size={20} /></button><div className="security-pill"><LockKeyhole size={14} /> End-to-end encrypted</div><div className="network-pill"><span /> Glyph network</div><button className="icon-button" aria-label="Notifications"><Bell size={19} /><span className="notification-dot" /></button><Avatar initials={(user?.name || "RK").slice(0, 2).toUpperCase()} color="ink" size="sm" /></div>
     </header>
 
     <main className="workspace">
       <aside className={`sidebar ${showMobileNav ? "sidebar-open" : ""}`}>
         <div className="sidebar-mobile-head"><span>Messages</span><button className="icon-button" onClick={() => setShowMobileNav(false)}><X size={19} /></button></div>
         <div className="sidebar-heading"><div><p className="eyebrow">Your space</p><h1>Messages</h1></div><button className="new-chat-button" aria-label="New chat"><Plus size={18} /></button></div>
-        <div className="search-box"><Search size={16} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search conversations" /></div>
+        <div className="search-box"><Search size={16} /><input value={searchQuery} onChange={(event) => setSearchQuery(event.target.value)} placeholder="Search @username" /></div>
         <div className="conversation-list"><div className="list-label">Recent chats <span>{visibleFriends.length}</span></div>
-          {visibleFriends.map((friend) => <button key={friend.name} className={`conversation ${friend.active ? "active" : ""}`} onClick={() => setShowMobileNav(false)}><Avatar initials={friend.initials} color={friend.color} /><div className="conversation-copy"><div className="conversation-name"><strong>{friend.name}</strong><time>{friend.time}</time></div><div className={`conversation-preview ${friend.status === "typing…" ? "typing" : ""}`}>{friend.preview}</div></div>{friend.active && <span className="unread-dot" />}</button>)}
+          {visibleFriends.map((friend) => <button key={friend.name} className={`conversation ${friend.active ? "active" : ""}`} onClick={() => setShowMobileNav(false)}><Avatar initials={friend.initials} color={friend.color} /><div className="conversation-copy"><div className="conversation-name"><strong>{friend.name}</strong><time>{friend.time}</time></div><div className="friend-handle">{friend.handle}</div><div className={`conversation-preview ${friend.status === "typing…" ? "typing" : ""}`}>{friend.preview}</div></div>{friend.active && <span className="unread-dot" />}</button>)}
           {visibleFriends.length === 0 && <div className="empty-search">No matching chats</div>}
         </div>
-        <div className="sidebar-footer"><button className="sidebar-action"><Settings2 size={17} /> Preferences</button><button className="sidebar-action"><Info size={17} /> How GlyphChat works</button></div>
+        <div className="sidebar-footer"><div className="identity-chip"><span className="identity-ring" /><div><small>Connected identity</small><strong>@{(user?.name || "ravi").toLowerCase().replace(/\s+/g, "")}</strong></div></div><button className="sidebar-action"><Settings2 size={17} /> Preferences</button><button className="sidebar-action"><Info size={17} /> How GlyphChat works</button></div>
       </aside>
 
       <section className="chat-panel">
@@ -107,7 +120,7 @@ export default function Home() {
           <div className="date-divider"><span>Today, September 7</span></div>
           <div className="protocol-note"><Sparkles size={14} /><span>Messages are encoded with the <strong>Glyph-26</strong> alphabet</span><button onClick={() => setShowDecoder((value) => !value)}>{showDecoder ? "Hide decoder" : "Try decoder"}</button></div>
           {showDecoder && <div className="decoder-card"><div className="decoder-label"><span>Symbol decoder</span><span className="decoder-live"><span /> live</span></div><input value={decoderInput} onChange={(event) => setDecoderInput(event.target.value)} /><div className="decoder-result">{decodeSymbols(decoderInput) || "Type symbols to decode"}</div></div>}
-          <div className="messages">{messages.map((message) => <div key={message.id} className={`message-row ${message.mine ? "mine" : ""}`}>{!message.mine && <Avatar initials="MC" color="coral" size="sm" />}<div className="message-stack"><div className="message-bubble"><div className="encoded-message"><span className="encoded-lock"><LockKeyhole size={12} /> encrypted</span><strong>{message.encoded}</strong></div>{decryptedIds[message.id] ? <div className="decrypted-message"><span><Unlock size={11} /> decrypted for 2 min</span><p>{message.text}</p></div> : <button className="decrypt-button" onClick={() => decryptMessage(message.id)}><Unlock size={12} /> Decrypt message <Timer size={12} /></button>}<div className="encoded-line"><span>Tap decrypt to reveal English</span><button aria-label="Copy encrypted message" onClick={() => copyValue(message.encoded, String(message.id))}>{copied === String(message.id) ? <Check size={13} /> : <Copy size={13} />}</button></div></div><div className="message-meta">{message.time}{message.mine && <><span>·</span><Check size={13} className="read-check" /><Check size={13} className="read-check second" /></>}</div></div></div>)}</div>
+          <div className="messages">{messages.map((message) => <div key={message.id} className={`message-row ${message.mine ? "mine" : ""}`}>{!message.mine && <Avatar initials="MC" color="coral" size="sm" />}<div className="message-stack"><div className="message-bubble"><div className="encoded-message"><span className="encoded-lock"><LockKeyhole size={12} /> encrypted</span><strong>{message.encoded}</strong></div>{decryptedIds[message.id] ? <div className="decrypted-message"><span><Unlock size={11} /> decrypted for 10 sec</span><p>{message.text}</p></div> : consumedIds[message.id] ? <div className="decrypt-expired"><LockKeyhole size={11} /> already viewed · locked again</div> : <button className="decrypt-button" onClick={() => decryptMessage(message.id)}><Unlock size={12} /> Decrypt once <Timer size={12} /></button>}<div className="encoded-line"><span>Tap decrypt to reveal English</span><button aria-label="Copy encrypted message" onClick={() => copyValue(message.encoded, String(message.id))}>{copied === String(message.id) ? <Check size={13} /> : <Copy size={13} />}</button></div></div><div className="message-meta">{message.time}{message.mine && <><span>·</span><Check size={13} className="read-check" /><Check size={13} className="read-check second" /></>}</div></div></div>)}</div>
         </div>
         <div className="composer-wrap"><div className="composer-mode"><span>Writing in</span><span className="english-mode"><span className="mode-dot" /> English</span><span className="mode-hint">will encrypt on send</span></div><div className="composer"><button className="composer-icon" aria-label="Attach file"><Paperclip size={19} /></button><input value={draft} onChange={(event) => setDraft(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") sendMessage(); }} placeholder="Write in English…" /><button className="composer-icon" aria-label="Add emoji"><Smile size={19} /></button><button className="send-button" aria-label="Send encrypted message" onClick={sendMessage}><Send size={18} /></button></div><div className="symbol-keyboard"><div className="keyboard-head"><span><Hash size={14} /> English keyboard</span><span>type normally · encrypts on send</span></div><div className="keys">{alphabet.map(([letter, symbol]) => <button key={letter} className="key" title={`Insert ${letter}`} onClick={() => setDraft((value) => value + letter)}><span>{letter}</span><small>{symbol}</small></button>)}</div></div></div>
       </section>
